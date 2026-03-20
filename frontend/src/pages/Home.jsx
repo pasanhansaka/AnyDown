@@ -5,7 +5,7 @@ import ResultCard from '../components/ResultCard';
 import HistorySidebar from '../components/HistorySidebar';
 import Footer from '../components/Footer';
 import { useAppContext } from '../context/AppContext';
-import { History, Loader2 } from 'lucide-react';
+import { History, Loader2, Info } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const Home = () => {
@@ -53,6 +53,7 @@ const Home = () => {
                                 <h3 className="text-xl font-bold mb-2">Extraction Failed</h3>
                                 <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">{error}</p>
                                 <button 
+                                    type="button"
                                     onClick={() => window.location.reload()}
                                     className="px-6 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-all"
                                 >

@@ -31,24 +31,36 @@ const UrlInput = () => {
     };
 
     const handleAnalyze = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         if (!url) return;
+
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+        if (!apiBaseUrl) {
+            console.error('API Base URL is not defined in .env');
+            const msg = 'Configuration error: API Base URL is missing';
+            setError(msg);
+            toast.error(msg);
+            return;
+        }
 
         setLoading(true);
         setError(null);
         setVideoData(null);
 
         try {
-            const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/analyze`, { url });
+            console.log(`Analyzing URL: ${url}`);
+            const response = await axios.post(`${apiBaseUrl}/analyze`, { url });
             if (response.data.success) {
                 setVideoData(response.data.data);
                 toast.success('Video analyzed successfully!');
             } else {
-                setError(response.data.message);
-                toast.error(response.data.message);
+                const msg = response.data.message || 'Analysis failed';
+                setError(msg);
+                toast.error(msg);
             }
         } catch (err) {
-            const msg = err.response?.data?.message || 'Failed to connect to server';
+            console.error('API Error:', err);
+            const msg = err.response?.data?.message || 'Failed to connect to server. Please ensure the backend is running.';
             setError(msg);
             toast.error(msg);
         } finally {
