@@ -11,9 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp and update it
-RUN pip3 install --no-cache-dir yt-dlp --break-system-packages && \
-    ln -sf $(which yt-dlp) /usr/local/bin/yt-dlp
+# Install yt-dlp
+RUN pip3 install --no-cache-dir yt-dlp --break-system-packages
 
 # Set working directory
 WORKDIR /app
@@ -39,4 +38,3 @@ ENV FFMPEG_PATH=/usr/bin/ffmpeg
 
 # Start the application
 CMD ["npm", "start"]
-
