@@ -1,4 +1,5 @@
 const express = require('express');
+const dns = require('dns');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -38,6 +39,27 @@ app.get('/', (req, res) => {
             analyze: '/api/analyze',
             download: '/api/download'
         }
+    });
+});
+
+app.get('/debug-dns', (req, res) => {
+    const hosts = ['google.com', 'youtube.com', 'music.youtube.com', 'github.com'];
+    const results = {};
+    
+    let completed = 0;
+    hosts.forEach(host => {
+        dns.lookup(host, (err, address, family) => {
+            results[host] = err ? { error: err.message, code: err.code } : { address, family };
+            completed++;
+            if (completed === hosts.length) {
+                res.json({ 
+                    results, 
+                    timestamp: new Date().toISOString(),
+                    node_version: process.version,
+                    platform: process.platform
+                });
+            }
+        });
     });
 });
 

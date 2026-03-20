@@ -4,16 +4,18 @@ FROM node:20-slim
 # Install system dependencies
 # Use root for installation
 USER root
+# Install yt-dlp and other tools
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
+    python3-venv \
     ffmpeg \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install yt-dlp
-RUN curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp \
-    && chmod a+rx /usr/local/bin/yt-dlp
+# Install yt-dlp via pip for better compatibility
+RUN pip3 install --no-cache-dir yt-dlp --break-system-packages
+
 
 # Use the existing 'node' user (UID 1000) instead of creating one
 # This avoids the UID collision error
@@ -38,6 +40,9 @@ EXPOSE 7860
 ENV PORT=7860
 ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
 ENV FFMPEG_PATH=/usr/bin/ffmpeg
+
+# Ensure yt-dlp is in a standard location if pip installed it elsewhere
+RUN ln -sf $(which yt-dlp) /usr/local/bin/yt-dlp
 
 # Start the application
 CMD ["npm", "start"]
