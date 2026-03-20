@@ -74,7 +74,20 @@ This project uses the `gh-pages` package to deploy the frontend to a dedicated b
 3. **Verify**:
    The site should be live at `https://<your-username>.github.io/AnyDown/`.
 
-### 2. Backend (Hosting - Card-Free)
+### 2. Backend (Hosting - Hugging Face Spaces - RECOMMENDED)
+Hugging Face Spaces is the best card-free way to host a Dockerized backend.
+
+1.  Create a **New Space** on [Hugging Face](https://huggingface.co/new-space).
+2.  **Name**: `anydown-api` (or similar).
+3.  **SDK**: Select **Docker**.
+4.  **Template**: Choose **Blank**.
+5.  **Visibility**: Public.
+6.  **Upload Files**: Upload all files from your `backend/` folder directly to the Space's repository.
+7.  Hugging Face will automatically build your Docker image and start the server on port `7860`.
+8.  Once the Space is running, copy the URL (e.g., `https://<your-username>-<space-name>.hf.space`).
+9.  Update `VITE_API_BASE_URL` in your frontend `.env` with `https://<your-username>-<space-name>.hf.space/api`.
+
+### 3. Backend (Alternative - Render - Card-Free)
 To deploy the backend on Render for free **without a credit card**, follow these steps:
 
 1. Create a **New Web Service** on Render.
@@ -89,19 +102,6 @@ To deploy the backend on Render for free **without a credit card**, follow these
    - `NODE_ENV`: `production`
    - `YT_DLP_PATH`: `yt-dlp` (This will work after the `pip install` in Step 5).
 
-### 3. Backend (Alternative - Hugging Face Spaces - Truly Card-Free)
-Hugging Face Spaces is the best card-free way to host a Dockerized backend.
-
-1.  Create a **New Space** on [Hugging Face](https://huggingface.co/new-space).
-2.  **Name**: `anydown-api`
-3.  **SDK**: Select **Docker** (NOT Streamlit or Gradio).
-4.  **Template**: Choose **Blank**.
-5.  **Visibility**: Public.
-6.  **Upload Files**: Upload all files from your `backend/` folder directly to the Space's repository.
-7.  Hugging Face will automatically build your Docker image and start the server on port `7860`.
-8.  Your API URL will be: `https://<your-username>-<space-name>.hf.space/api` (e.g., `https://pasan-anydown-api.hf.space/api`).
-
 ## ⚖️ Legal Disclaimer
 
 This tool is intended for personal use and for downloading content that you own or have explicit permission to download. The developers are not responsible for any misuse of this application.
-
