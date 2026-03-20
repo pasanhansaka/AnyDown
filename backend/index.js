@@ -13,6 +13,7 @@ const PORT = process.env.PORT || 5000;
 app.use(helmet({
     crossOriginResourcePolicy: false,
     frameguard: false, // Allow embedding in Hugging Face iframes
+    contentSecurityPolicy: false, // Disable CSP for easier integration in Spaces
 }));
 app.use(cors());
 app.use(express.json());
