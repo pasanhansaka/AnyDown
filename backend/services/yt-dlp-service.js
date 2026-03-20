@@ -30,11 +30,16 @@ const ytDlpService = {
                 stderr += data.toString();
             });
 
+            child.on('error', (err) => {
+                console.error('Failed to start yt-dlp:', err);
+                reject(new Error(`Failed to start yt-dlp: ${err.message}`));
+            });
+
             child.on('close', (code) => {
                 if (code !== 0) {
                     console.error(`yt-dlp process exited with code ${code}`);
                     console.error(`stderr: ${stderr}`);
-                    return reject(new Error('Failed to extract video metadata. Please check the URL.'));
+                    return reject(new Error(`Failed to extract video metadata: ${stderr || 'Check the URL.'}`));
                 }
 
                 try {
