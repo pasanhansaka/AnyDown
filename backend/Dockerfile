@@ -34,8 +34,10 @@ COPY --chown=node . .
 # Expose port (Hugging Face Spaces default)
 EXPOSE 7860
 
-# Set environment variable for port
+# Set environment variable for port and binary paths
 ENV PORT=7860
+ENV YT_DLP_PATH=/usr/local/bin/yt-dlp
+ENV FFMPEG_PATH=/usr/bin/ffmpeg
 
 # Start the application
 CMD ["npm", "start"]
