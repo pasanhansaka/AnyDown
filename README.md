@@ -33,13 +33,30 @@
 
 ---
 
+## 🚀 Deployment
+
+This project is designed to be deployed in two parts:
+
+### 1. Frontend (GitHub Pages)
+1. Update `frontend/.env` with your Backend API URL.
+2. Run `npm run deploy` from the root directory.
+3. Your site will be live at `https://<username>.github.io/AnyDown/`.
+
+### 2. Backend (Hugging Face Spaces)
+1. Create a **Docker** Space on Hugging Face.
+2. Upload the **contents** of the `backend/` folder (not the folder itself) to the Space.
+3. Ensure the `Dockerfile` is at the root of the Space.
+4. Once the status shows **Running**, your API is ready.
+
+---
+
 ## 📁 Project Structure
 
 ```
 AnyDown/
 ├── frontend/          # React + Vite frontend
 ├── backend/           # Express.js API server
-├── dist/              # Production build output
+├── dist/              # Production build output (for GitHub Pages)
 ├── package.json       # Root scripts (install:all, deploy, dev)
 └── .gitignore
 ```

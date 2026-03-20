@@ -16,6 +16,7 @@ const ytDlpService = {
                 '--dump-json',
                 '--flat-playlist', // Don't expand playlists
                 '--no-warnings',
+                '--force-ipv4',
                 url
             ]);
 
