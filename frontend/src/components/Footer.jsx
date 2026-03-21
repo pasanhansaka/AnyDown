@@ -1,7 +1,13 @@
-import React from 'react';
-import { Download, Shield, Heart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Shield, Heart, Coffee, Github } from 'lucide-react';
+import LegalModal from './LegalModal';
 
 const Footer = () => {
+    const [modal, setModal] = useState({ isOpen: false, type: 'privacy' });
+
+    const openModal = (type) => setModal({ isOpen: true, type });
+    const closeModal = () => setModal({ isOpen: false, type: 'privacy' });
+
     return (
         <footer className="bg-white/5 dark:bg-black/20 border-t border-gray-200 dark:border-white/10 py-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,20 +23,38 @@ const Footer = () => {
                     </div>
                     
                     <div>
-                        <h3 className="font-semibold mb-4">Legal</h3>
+                        <h3 className="font-semibold mb-4 text-primary">Legal</h3>
                         <ul className="space-y-2 text-gray-500 dark:text-gray-400">
-                            <li><a href="#" className="hover:text-primary transition-colors">Privacy Policy</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Terms of Service</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Disclaimer</a></li>
+                            <li><button onClick={() => openModal('privacy')} className="hover:text-primary transition-colors">Privacy Policy</button></li>
+                            <li><button onClick={() => openModal('terms')} className="hover:text-primary transition-colors">Terms of Service</button></li>
+                            <li><button onClick={() => openModal('disclaimer')} className="hover:text-primary transition-colors">Disclaimer</button></li>
                         </ul>
                     </div>
 
                     <div>
-                        <h3 className="font-semibold mb-4">Support</h3>
+                        <h3 className="font-semibold mb-4 text-primary">Support</h3>
                         <ul className="space-y-2 text-gray-500 dark:text-gray-400">
-                            <li><a href="#" className="hover:text-primary transition-colors">Contact Us</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">FAQ</a></li>
-                            <li><a href="#" className="hover:text-primary transition-colors">Donate</a></li>
+                            <li><a href="mailto:thornsolution@gmail.com" className="hover:text-primary transition-colors">Contact Us</a></li>
+                            <li>
+                                <a 
+                                    href="https://github.com/sponsors/pasanhansaka" 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                                >
+                                    <Github size={14} /> GitHub Sponsor
+                                </a>
+                            </li>
+                            <li>
+                                <a 
+                                    href="https://www.buymeacoffee.com/pasanhansaka" 
+                                    target="_blank" 
+                                    rel="noreferrer"
+                                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                                >
+                                    <Coffee size={14} /> Buy Me a Coffee
+                                </a>
+                            </li>
                         </ul>
                     </div>
                 </div>
@@ -39,14 +63,20 @@ const Footer = () => {
                     <p className="flex items-center justify-center gap-1">
                         Made with <Heart size={14} className="text-red-500 fill-current" /> for the community.
                     </p>
-                    <p className="mt-2">
-                        © {new Date().getFullYear()} AnyDown. All rights reserved.
+                    <p className="mt-2 text-slate-400">
+                        © {new Date().getFullYear()} <span className="text-primary font-bold">Thorn Solution</span>. All rights reserved.
                     </p>
                     <p className="mt-4 text-[10px] uppercase tracking-widest opacity-50">
                         This tool is intended for personal use and for content you have permission to download.
                     </p>
                 </div>
             </div>
+
+            <LegalModal 
+                isOpen={modal.isOpen} 
+                onClose={closeModal} 
+                type={modal.type} 
+            />
         </footer>
     );
 };
