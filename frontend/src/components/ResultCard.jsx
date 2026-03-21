@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Info, ExternalLink, Share2 } from 'lucide-react';
+import { Clock, Info, ExternalLink, Share2, Play, Pause, Volume2, RotateCcw } from 'lucide-react';
 import FormatSelector from './FormatSelector';
 import AspectRatioSelector from './AspectRatioSelector';
 import { useAppContext } from '../context/AppContext';
@@ -9,8 +9,15 @@ import { toast } from 'react-toastify';
 const ResultCard = () => {
     const { videoData, addToHistory } = useAppContext();
     const [aspectRatio, setAspectRatio] = useState('original');
+    const [showPreview, setShowPreview] = useState(false);
 
     if (!videoData) return null;
+
+    // Find a playable stream (prefer MP4 for compatibility)
+    const previewFormat = videoData.formats.find(f => f.is_video && f.extension === 'mp4' && !f.is_virtual) || 
+                         videoData.formats.find(f => f.is_video && !f.is_virtual);
+    
+    const audioPreview = videoData.formats.find(f => f.is_audio);
 
     const handleDownload = (format) => {
         const queryParams = new URLSearchParams({
@@ -54,29 +61,73 @@ const ResultCard = () => {
         >
             <div className="glass-card overflow-hidden">
                 <div className="flex flex-col lg:flex-row">
-                    {/* Video Preview */}
-                    <div className="lg:w-2/5 relative aspect-video lg:aspect-square bg-black">
-                        <img 
-                            src={videoData.thumbnail} 
-                            alt={videoData.title} 
-                            className="w-full h-full object-cover opacity-80"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-end items-end p-6">
-                            <div className="w-full">
-                                <div className="flex items-center gap-2 text-white/80 text-xs font-bold uppercase tracking-widest mb-2">
-                                    <span className="bg-primary/80 px-2 py-0.5 rounded">{videoData.platform}</span>
-                                    {videoData.duration && (
-                                        <span className="flex items-center gap-1">
-                                            <Clock size={12} />
-                                            {Math.floor(videoData.duration / 60)}:{(videoData.duration % 60).toString().padStart(2, '0')}
-                                        </span>
-                                    )}
+                    {/* Video Preview Area */}
+                    <div className="lg:w-2/5 relative aspect-video lg:aspect-square bg-black group/preview">
+                        {!showPreview ? (
+                            <>
+                                <img 
+                                    src={videoData.thumbnail} 
+                                    alt={videoData.title} 
+                                    className="w-full h-full object-cover opacity-80 transition-transform duration-700 group-hover/preview:scale-105"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-between p-6">
+                                    <div className="flex justify-between items-start">
+                                        <div className="flex items-center gap-2 text-white/80 text-xs font-bold uppercase tracking-widest">
+                                            <span className="bg-primary/80 px-2 py-0.5 rounded backdrop-blur-sm">{videoData.platform}</span>
+                                        </div>
+                                        {videoData.duration && (
+                                            <span className="flex items-center gap-1 text-white/80 text-xs font-bold bg-black/40 px-2 py-1 rounded-lg backdrop-blur-sm">
+                                                <Clock size={12} />
+                                                {Math.floor(videoData.duration / 60)}:{(videoData.duration % 60).toString().padStart(2, '0')}
+                                            </span>
+                                        )}
+                                    </div>
+                                    
+                                    <div className="space-y-4">
+                                        <h2 className="text-white font-bold text-xl line-clamp-2 leading-tight drop-shadow-lg">
+                                            {videoData.title}
+                                        </h2>
+                                        
+                                        {(previewFormat || audioPreview) && (
+                                            <button 
+                                                onClick={() => setShowPreview(true)}
+                                                className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-white text-black hover:bg-primary hover:text-white rounded-xl font-bold transition-all transform group-hover/preview:translate-y-0 translate-y-2 opacity-0 group-hover/preview:opacity-100 shadow-2xl"
+                                            >
+                                                <Play size={18} fill="currentColor" />
+                                                Watch Preview
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                                <h2 className="text-white font-bold text-xl line-clamp-2 leading-tight">
-                                    {videoData.title}
-                                </h2>
+                            </>
+                        ) : (
+                            <div className="relative w-full h-full flex items-center justify-center">
+                                {previewFormat ? (
+                                    <video 
+                                        src={previewFormat.url} 
+                                        controls 
+                                        autoPlay 
+                                        className="w-full h-full object-contain"
+                                        poster={videoData.thumbnail}
+                                    />
+                                ) : (
+                                    <div className="p-8 text-center space-y-4">
+                                        <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto animate-pulse">
+                                            <Volume2 size={32} className="text-primary" />
+                                        </div>
+                                        <h3 className="font-bold">Audio Preview Only</h3>
+                                        <audio src={audioPreview?.url} controls autoPlay className="w-full" />
+                                    </div>
+                                )}
+                                <button 
+                                    onClick={() => setShowPreview(false)}
+                                    className="absolute top-4 right-4 p-2 bg-black/60 hover:bg-black rounded-full text-white backdrop-blur-md transition-all z-10"
+                                    title="Close Preview"
+                                >
+                                    <RotateCcw size={18} />
+                                </button>
                             </div>
-                        </div>
+                        )}
                     </div>
 
                     {/* Format Options */}

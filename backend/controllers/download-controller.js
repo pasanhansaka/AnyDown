@@ -17,22 +17,19 @@ const downloadController = {
             return res.status(400).send('URL is required');
         }
 
-        const fileName = `${title || 'video'}.mp4`;
+        const ytDlpService = require('../services/yt-dlp-service');
+        const isAudio = format_id && (format_id.includes('audio') || format_id === '140' || format_id === '251');
+        const extension = isAudio ? 'mp3' : 'mp4';
+        const fileName = `${title || 'video'}.${extension}`;
+        
         res.header('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
-        res.header('Content-Type', 'video/mp4');
+        res.header('Content-Type', isAudio ? 'audio/mpeg' : 'video/mp4');
 
         // Arguments for yt-dlp
         const args = [
             '-f', format_id || 'bestvideo+bestaudio/best',
             '-o', '-', // Output to stdout
-            '--no-playlist',
-            '--no-warnings',
-            '--force-ipv4',
-            '--no-check-certificate',
-            '--geo-bypass',
-            '--referer', 'https://www.youtube.com/',
-            '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            '--add-header', 'Accept-Language: en-US,en;q=0.9',
+            ...ytDlpService.getCommonArgs(),
             url
         ];
 
@@ -92,7 +89,6 @@ const downloadController = {
             
             ytDlpProcess.stderr.on('data', (data) => {
                 // Not necessarily an error, but log it
-                // console.log(`yt-dlp progress/info: ${data}`);
             });
 
             ytDlpProcess.on('close', (code) => {
