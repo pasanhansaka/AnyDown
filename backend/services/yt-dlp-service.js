@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const axios = require('axios');
 require('dotenv').config();
 
 const YT_DLP_PATH = process.env.YT_DLP_PATH || 'yt-dlp';
@@ -151,6 +152,21 @@ const ytDlpService = {
         }
 
         return [...uniqueVideo, ...audioFormats.slice(0, 5)]; // Limit audio to top 5
+    },
+
+    /**
+     * Get YouTube metadata via oEmbed API (Robust backup)
+     * @param {string} url 
+     * @returns {Promise<Object>}
+     */
+    getYouTubeOEmbed: async (url) => {
+        try {
+            const response = await axios.get(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`);
+            return response.data;
+        } catch (error) {
+            console.error('oEmbed error:', error.message);
+            return null;
+        }
     }
 };
 
