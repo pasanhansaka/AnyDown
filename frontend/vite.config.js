@@ -17,17 +17,17 @@ export default defineConfig({
         theme_color: '#0f172a',
         icons: [
           {
-            src: 'pwa-192x192.png',
+            src: 'anydown_logo.png',
             sizes: '192x192',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'anydown_logo.png',
             sizes: '512x512',
             type: 'image/png'
           },
           {
-            src: 'pwa-512x512.png',
+            src: 'anydown_logo.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'any maskable'

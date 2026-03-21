@@ -8,9 +8,7 @@ const Footer = () => {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
                     <div className="col-span-1 md:col-span-2">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="bg-primary p-1.5 rounded-lg text-white">
-                                <Download size={20} />
-                            </div>
+                            <img src="/anydown_logo.png" alt="AnyDown Logo" className="w-7 h-7 rounded-lg shadow-lg shadow-primary/20" />
                             <span className="text-xl font-bold">AnyDown</span>
                         </div>
                         <p className="text-gray-500 dark:text-gray-400 max-w-sm">
