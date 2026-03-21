@@ -39,20 +39,7 @@ This project is designed to be deployed in two parts:
 
 ### Frontend - GitHub Pages
 
-1. Ensure the `base` property in `frontend/vite.config.js` matches your repository name (e.g., `/AnyDown/`).
-2. Run `npm run deploy` from the root directory. This will:
-   - Build the frontend.
-   - Copy the build to the `dist` folder.
-   - Push the `dist` folder to the `gh-pages` branch.
-3. Enable GitHub Pages in your repository settings and point it to the `gh-pages` branch.
-
-### Backend - Railway / Hugging Face
-
-1. **Railway**: Link your GitHub repository. Railway will detect the `backend/` folder and use `nixpacks.toml` to build the service.
-2. **Hugging Face Spaces**: Create a new Docker Space and upload the contents of the `backend/` folder. The `Dockerfile` is already optimized for HF Spaces.
-3. **Environment Variables**: Set the following in your hosting provider:
-   - `NODE_ENV=production`
-   - `YT_DLP_USE_BROWSER_COOKIES=chrome` (or provide a `cookies.txt`)
+### Backend - Railway
 
 ---
 
