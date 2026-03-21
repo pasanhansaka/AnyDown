@@ -73,7 +73,9 @@ const ContactModal = ({ isOpen, onClose }) => {
                             
                             <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/5">
                                 <a 
-                                    href={`mailto:${email}`}
+                                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
                                     className="w-full btn-primary flex items-center justify-center gap-2"
                                 >
                                     <Mail size={18} />
