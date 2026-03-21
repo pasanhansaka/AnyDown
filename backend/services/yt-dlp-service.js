@@ -20,10 +20,23 @@ const ytDlpService = {
                 '--no-check-certificate',
                 '--geo-bypass',
                 '--referer', 'https://www.youtube.com/',
-                '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
                 '--add-header', 'Accept-Language: en-US,en;q=0.9',
-                url
+                '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                '--extractor-args', 'youtube:player_client=web,default;youtube:player_skip=webpage,configs',
             ];
+
+            // Add cookies if available
+            if (process.env.YT_DLP_COOKIES_PATH) {
+                const cookiesPath = path.isAbsolute(process.env.YT_DLP_COOKIES_PATH) 
+                    ? process.env.YT_DLP_COOKIES_PATH 
+                    : path.join(__dirname, '..', process.env.YT_DLP_COOKIES_PATH);
+                args.push('--cookies', cookiesPath);
+            } else if (process.env.YT_DLP_USE_BROWSER_COOKIES) {
+                args.push('--cookies-from-browser', process.env.YT_DLP_USE_BROWSER_COOKIES);
+            }
+
+            args.push(url);
             
             console.log(`Executing yt-dlp with args: ${args.join(' ')}`);
             const child = spawn(YT_DLP_PATH, args);

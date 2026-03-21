@@ -1,0 +1,9 @@
+# backend/nixpacks.toml
+[phases.setup]
+nixPkgs = ["python311", "ffmpeg"]
+
+[phases.install]
+cmds = ["npm install", "pip3 install -U yt-dlp"]
+
+[start]
+cmd = "npm start"
