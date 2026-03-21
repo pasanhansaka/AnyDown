@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clipboard, Play, Youtube, Facebook, Instagram, Music } from 'lucide-react';
+import { Search, Clipboard, Play, Youtube, Facebook, Instagram, Music, Twitter, Linkedin } from 'lucide-react';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
@@ -14,6 +14,9 @@ const UrlInput = () => {
         if (/facebook\.com|fb\.watch/.test(val)) return { name: 'Facebook', icon: <Facebook className="text-[#1877F2]" />, color: 'from-[#1877F2] to-[#0C5DC7]' };
         if (/instagram\.com/.test(val)) return { name: 'Instagram', icon: <Instagram className="text-[#E4405F]" />, color: 'from-[#833AB4] via-[#FD1D1D] to-[#FCAF45]' };
         if (/tiktok\.com/.test(val)) return { name: 'TikTok', icon: <Music className="text-[#000000] dark:text-white" />, color: 'from-[#000000] to-[#25F4EE]' };
+        if (/twitter\.com|x\.com/.test(val)) return { name: 'X (Twitter)', icon: <Twitter className="text-[#1DA1F2]" />, color: 'from-[#1DA1F2] to-[#0C85D0]' };
+        if (/linkedin\.com/.test(val)) return { name: 'LinkedIn', icon: <Linkedin className="text-[#0A66C2]" />, color: 'from-[#0A66C2] to-[#004182]' };
+        return null;
         return null;
     };
 
@@ -107,6 +110,16 @@ const UrlInput = () => {
                     </div>
                 </div>
             </form>
+
+            <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs font-bold uppercase tracking-widest text-slate-500 opacity-60">
+                <span>YouTube</span>
+                <span>Facebook</span>
+                <span>Instagram</span>
+                <span>TikTok</span>
+                <span>Twitter/X</span>
+                <span>LinkedIn</span>
+                <span className="text-primary italic">1,000+ More</span>
+            </div>
 
             {platform && (
                 <div className="flex justify-center">

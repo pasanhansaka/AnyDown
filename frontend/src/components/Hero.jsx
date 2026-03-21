@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import UrlInput from './UrlInput';
-import { Youtube, Facebook, Instagram, Music, Download, Zap, Shield } from 'lucide-react';
+import { Youtube, Facebook, Instagram, Music, Download, Zap, Shield, Twitter, Linkedin, Globe } from 'lucide-react';
 
 const Hero = () => {
     return (
@@ -30,7 +30,7 @@ const Hero = () => {
                         </span>
                     </h1>
                     <p className="text-lg md:text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-12">
-                        Fastest and easiest way to download high-quality videos and audio from YouTube, Facebook, Instagram, and TikTok for free.
+                        Download high-quality videos and audio from <span className="text-primary font-bold">1,000+ supported sites</span> including YouTube, Facebook, Instagram, TikTok, and X.
                     </p>
                 </motion.div>
 
@@ -52,6 +52,9 @@ const Hero = () => {
                     <div className="flex items-center gap-2 font-bold text-lg"><Facebook className="text-[#1877F2]" /> Facebook</div>
                     <div className="flex items-center gap-2 font-bold text-lg"><Instagram className="text-[#E4405F]" /> Instagram</div>
                     <div className="flex items-center gap-2 font-bold text-lg"><Music className="text-current" /> TikTok</div>
+                    <div className="flex items-center gap-2 font-bold text-lg"><Twitter className="text-[#1DA1F2]" /> X</div>
+                    <div className="flex items-center gap-2 font-bold text-lg"><Linkedin className="text-[#0A66C2]" /> LinkedIn</div>
+                    <div className="flex items-center gap-2 font-bold text-lg text-primary"><Globe /> 1,000+ More</div>
                 </motion.div>
 
                 <div className="mt-20 grid grid-cols-1 md:grid-cols-3 gap-8">
