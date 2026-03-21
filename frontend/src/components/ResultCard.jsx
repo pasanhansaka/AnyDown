@@ -108,7 +108,7 @@ const ResultCard = () => {
                                         controls 
                                         autoPlay 
                                         className="w-full h-full object-contain"
-                                        poster={videoData.thumbnail}
+                                        poster={videoData.thumbnail || `${import.meta.env.BASE_URL}anydown_logo.png`}
                                     />
                                 ) : (
                                     <div className="p-8 text-center space-y-4">

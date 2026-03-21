@@ -10,7 +10,7 @@ const Navbar = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex justify-between items-center h-16">
                     <div className="flex items-center gap-2">
-                        <img src="/anydown_logo.png" alt="AnyDown Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-primary/20" />
+                        <img src={`${import.meta.env.BASE_URL}anydown_logo.png`} alt="AnyDown Logo" className="w-8 h-8 rounded-lg shadow-lg shadow-primary/20" />
                         <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-primary-light">
                             AnyDown
                         </span>
