@@ -28,9 +28,9 @@ const LegalModal = ({ isOpen, onClose, type }) => {
             title: 'Disclaimer',
             icon: <AlertTriangle className="text-yellow-500" />,
             text: [
-                'AnyDown is an independent project and is NOT affiliated with YouTube, Facebook, Instagram, or TikTok.',
+                'AnyDown is an independent project and is NOT affiliated with any social media platforms.',
                 'The service is provided "as is" without any warranties of any kind.',
-                'We are not responsible for any misuse of this tool or any copyright violations committed by users.',
+                'We are not responsible for any misuse of this tool or any copyright violations.',
                 'Platform names and logos are trademarks of their respective owners.'
             ]
         }

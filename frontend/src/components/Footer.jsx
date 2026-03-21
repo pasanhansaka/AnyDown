@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Download, Shield, Heart, Coffee, Github } from 'lucide-react';
 import LegalModal from './LegalModal';
+import ContactModal from './ContactModal';
 
 const Footer = () => {
     const [modal, setModal] = useState({ isOpen: false, type: 'privacy' });
+    const [isContactOpen, setIsContactOpen] = useState(false);
 
     const openModal = (type) => setModal({ isOpen: true, type });
     const closeModal = () => setModal({ isOpen: false, type: 'privacy' });
@@ -34,7 +36,7 @@ const Footer = () => {
                     <div>
                         <h3 className="font-semibold mb-4 text-primary">Support</h3>
                         <ul className="space-y-2 text-gray-500 dark:text-gray-400">
-                            <li><a href="mailto:thornsolution@gmail.com" className="hover:text-primary transition-colors">Contact Us</a></li>
+                            <li><button onClick={() => setIsContactOpen(true)} className="hover:text-primary transition-colors text-left w-full">Contact Us</button></li>
                             <li>
                                 <a 
                                     href="https://github.com/sponsors/pasanhansaka" 
@@ -76,6 +78,11 @@ const Footer = () => {
                 isOpen={modal.isOpen} 
                 onClose={closeModal} 
                 type={modal.type} 
+            />
+
+            <ContactModal 
+                isOpen={isContactOpen} 
+                onClose={() => setIsContactOpen(false)} 
             />
         </footer>
     );
