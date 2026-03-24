@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Navbar from '../components/Navbar';
 import Hero from '../components/Hero';
 import ResultCard from '../components/ResultCard';
+import PlaylistCard from '../components/PlaylistCard';
 import HistorySidebar from '../components/HistorySidebar';
 import Footer from '../components/Footer';
 import { useAppContext } from '../context/AppContext';
@@ -39,7 +40,11 @@ const Home = () => {
                                 <p className="text-sm text-gray-500 mt-2">Connecting to proxy servers</p>
                             </motion.div>
                         ) : videoData ? (
-                            <ResultCard key="result" />
+                            videoData.is_collection ? (
+                                <PlaylistCard key="playlist" />
+                            ) : (
+                                <ResultCard key="result" />
+                            )
                         ) : error ? (
                             <motion.div
                                 key="error"

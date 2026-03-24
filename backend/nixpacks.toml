@@ -3,7 +3,7 @@
 nixPkgs = ["python311", "ffmpeg"]
 
 [phases.install]
-cmds = ["npm install", "pip3 install -U yt-dlp"]
+cmds = ["npm install", "curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp", "chmod +x /usr/local/bin/yt-dlp"]
 
 [start]
 cmd = "npm start"

@@ -7,7 +7,7 @@ import { toast } from 'react-toastify';
 const UrlInput = () => {
     const [url, setUrl] = useState('');
     const [platform, setPlatform] = useState(null);
-    const { setLoading, setVideoData, setError } = useAppContext();
+    const { setLoading, setVideoData, setError, analyzeUrl } = useAppContext();
 
     const detectPlatform = (val) => {
         if (/youtube\.com|youtu\.be/.test(val)) return { name: 'YouTube', icon: <Youtube className="text-[#FF0000]" />, color: 'from-[#FF0000] to-[#CC0000]' };
@@ -42,39 +42,7 @@ const UrlInput = () => {
     const handleAnalyze = async (e) => {
         if (e) e.preventDefault();
         if (!url) return;
-
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
-        if (!apiBaseUrl) {
-            console.error('API Base URL is not defined in .env');
-            const msg = 'Configuration error: API Base URL is missing';
-            setError(msg);
-            toast.error(msg);
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-        setVideoData(null);
-
-        try {
-            console.log(`Analyzing URL: ${url}`);
-            const response = await axios.post(`${apiBaseUrl}/analyze`, { url });
-            if (response.data.success) {
-                setVideoData(response.data.data);
-                toast.success('Video analyzed successfully!');
-            } else {
-                const msg = response.data.message || 'Analysis failed';
-                setError(msg);
-                toast.error(msg);
-            }
-        } catch (err) {
-            console.error('API Error:', err);
-            const msg = err.response?.data?.message || 'Failed to connect to server. Please ensure the backend is running.';
-            setError(msg);
-            toast.error(msg);
-        } finally {
-            setLoading(false);
-        }
+        await analyzeUrl(url);
     };
 
     return (

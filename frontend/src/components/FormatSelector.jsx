@@ -1,5 +1,5 @@
 import React from 'react';
-import { Film, Music, Download, CheckCircle } from 'lucide-react';
+import { Film, Music, Download, CheckCircle, ShieldCheck } from 'lucide-react';
 
 const FormatSelector = ({ formats, onDownload, type = 'video' }) => {
     const filteredFormats = formats.filter(f => type === 'video' ? f.is_video : f.is_audio);
@@ -23,17 +23,32 @@ const FormatSelector = ({ formats, onDownload, type = 'video' }) => {
                     <button
                         key={idx}
                         onClick={() => onDownload(format)}
-                        className="glass-card p-4 flex items-center justify-between group hover:border-primary/50 hover:bg-primary/5 transition-all text-left"
+                        className={`glass-card p-4 flex items-center justify-between group transition-all text-left relative overflow-hidden ${
+                            format.is_virtual 
+                            ? 'border-primary/40 bg-primary/10 shadow-lg shadow-primary/10 hover:border-primary hover:bg-primary/20' 
+                            : 'hover:border-primary/50 hover:bg-primary/5'
+                        }`}
                     >
+                        {format.is_virtual && (
+                            <div className="absolute top-0 right-0">
+                                <div className="bg-primary text-white text-[8px] font-black px-2 py-0.5 rounded-bl-lg uppercase tracking-wider flex items-center gap-1">
+                                    <ShieldCheck size={8} /> Best
+                                </div>
+                            </div>
+                        )}
                         <div className="flex flex-col">
                             <span className="font-bold text-sm">
                                 {type === 'video' ? (format.resolution || format.quality) : (format.quality || 'Standard Quality')}
                             </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
+                            <span className={`text-xs uppercase font-medium ${format.is_virtual ? 'text-primary' : 'text-gray-500 dark:text-gray-400'}`}>
                                 {format.extension} • {formatSize(format.filesize)}
                             </span>
                         </div>
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                        <div className={`p-2 rounded-lg transition-all ${
+                            format.is_virtual 
+                            ? 'bg-primary text-white group-hover:scale-110 shadow-lg' 
+                            : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'
+                        }`}>
                             <Download size={16} />
                         </div>
                     </button>

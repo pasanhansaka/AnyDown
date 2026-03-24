@@ -13,15 +13,17 @@ const ytDlpService = {
      */
     getCommonArgs: () => {
         const args = [
-            '--no-playlist',
             '--no-warnings',
             '--force-ipv4',
             '--no-check-certificate',
             '--geo-bypass',
             '--referer', 'https://www.youtube.com/',
-            '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
+            '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
             '--add-header', 'Accept-Language: en-US,en;q=0.9',
-            '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+            '--add-header', 'Sec-Fetch-Mode: navigate',
+            '--add-header', 'Sec-Fetch-User: ?1',
+            '--add-header', 'Sec-Fetch-Dest: document',
             '--extractor-args', 'youtube:player_client=android,web,default',
         ];
 
@@ -81,10 +83,35 @@ const ytDlpService = {
                 }
 
                 try {
+                    // stdout can contain multiple JSON objects if it's a playlist and we didn't use --flat-playlist
+                    // But with --dump-json on a playlist, it typically outputs the whole playlist JSON if not using --flat-playlist
+                    // Actually, let's try to parse as a single object first.
                     const json = JSON.parse(stdout);
+                    
+                    // If it's a playlist, it will have an '_type' field or 'entries'
+                    if (json._type === 'playlist' || json.entries) {
+                        json.is_collection = true;
+                    }
+
                     resolve(json);
                 } catch (e) {
-                    reject(new Error('Failed to parse video metadata.'));
+                    // Try parsing line by line if it's a stream of JSONs
+                    try {
+                        const lines = stdout.trim().split('\n');
+                        if (lines.length > 1) {
+                            const entries = lines.map(line => JSON.parse(line));
+                            resolve({
+                                is_collection: true,
+                                entries: entries,
+                                title: entries[0]?.playlist_title || 'Collection',
+                                extractor_key: entries[0]?.extractor_key
+                            });
+                        } else {
+                            reject(new Error('Failed to parse video metadata.'));
+                        }
+                    } catch (err) {
+                        reject(new Error('Failed to parse video metadata.'));
+                    }
                 }
             });
         });
@@ -124,10 +151,22 @@ const ytDlpService = {
             format_id: 'bestvideo+bestaudio/best',
             extension: 'mp4',
             resolution: 'Best Quality (1080p+)',
-            filesize: 0, // Will be determined during download
+            filesize: 0,
             quality: 'Highest Available',
             is_video: true,
             is_audio: false,
+            is_virtual: true
+        };
+
+        // Add a "Best Audio" virtual format
+        const bestAudio = {
+            format_id: 'bestaudio/best',
+            extension: 'mp3',
+            resolution: 'Best Audio (320kbps)',
+            filesize: 0,
+            quality: 'High Quality MP3',
+            is_video: false,
+            is_audio: true,
             is_virtual: true
         };
 
@@ -155,7 +194,7 @@ const ytDlpService = {
             }
         }
 
-        return [...uniqueVideo, ...audioFormats.slice(0, 5)]; // Limit audio to top 5
+        return [...uniqueVideo, bestAudio, ...audioFormats.slice(0, 5)]; // Limit audio to top 5
     },
 
     /**
@@ -171,6 +210,49 @@ const ytDlpService = {
             console.error('oEmbed error:', error.message);
             return null;
         }
+    },
+    
+    /**
+     * Extra metadata for a playlist (flat)
+     */
+    getPlaylistMetadata: (url) => {
+        return new Promise((resolve, reject) => {
+            const args = [
+                '--dump-json',
+                '--flat-playlist',
+                ...ytDlpService.getCommonArgs(),
+                url
+            ];
+            
+            const child = spawn(YT_DLP_PATH, args);
+            let stdout = '';
+            let stderr = '';
+
+            child.stdout.on('data', (data) => stdout += data.toString());
+            child.stderr.on('data', (data) => stderr += data.toString());
+
+            child.on('close', (code) => {
+                if (code !== 0) return reject(new Error(stderr));
+                try {
+                    const entries = stdout.trim().split('\n').map(line => {
+                        try {
+                            return JSON.parse(line);
+                        } catch (e) {
+                            return null;
+                        }
+                    }).filter(e => e !== null);
+
+                    resolve({
+                        is_collection: true,
+                        entries: entries,
+                        title: entries[0]?.playlist_title || 'Playlist',
+                        platform: entries[0]?.extractor_key
+                    });
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        });
     }
 };
 

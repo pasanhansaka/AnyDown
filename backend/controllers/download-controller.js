@@ -20,8 +20,11 @@ const downloadController = {
         }
 
         const ytDlpService = require('../services/yt-dlp-service');
-        const isAudio = format_id && (format_id.includes('audio') || format_id === '140' || format_id === '251');
-        const extension = isAudio ? 'mp3' : 'mp4';
+        const isAudioOnly = format_id && 
+            ((format_id.includes('audio') && !format_id.includes('video')) || 
+             ['140', '251', 'bestaudio', 'bestaudio/best'].some(id => format_id.includes(id)));
+             
+        const extension = isAudioOnly ? 'mp3' : 'mp4';
         const safeTitle = (title || 'video').replace(/[/\\?%*:|"<>]/g, '-');
         const fileName = `${safeTitle}.${extension}`;
         
@@ -43,7 +46,7 @@ const downloadController = {
         ];
 
         // Specific handling for quality/merging
-        if (!isAudio) {
+        if (!isAudioOnly) {
             args.push('--merge-output-format', 'mp4');
         } else {
             args.push('--extract-audio', '--audio-format', 'mp3');
@@ -80,7 +83,7 @@ const downloadController = {
             const downloadPath = path.join(tempDir, downloadedFile);
 
             try {
-                if (aspect_ratio && aspect_ratio !== 'original' && !isAudio) {
+                if (aspect_ratio && aspect_ratio !== 'original' && !isAudioOnly) {
                     console.log(`Applying aspect ratio: ${aspect_ratio}`);
                     
                     let arValue = 16/9;
@@ -116,9 +119,13 @@ const downloadController = {
                         .run();
                 } else {
                     // Send the file directly
+                    console.log(`Sending file: ${downloadPath}`);
                     res.download(downloadPath, fileName, (err) => {
                         // Cleanup
-                        if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath);
+                        if (fs.existsSync(downloadPath)) {
+                            // Only unlink if it's the temp file, not the original (though they are all temp here)
+                            fs.unlinkSync(downloadPath);
+                        }
                     });
                 }
             } catch (error) {

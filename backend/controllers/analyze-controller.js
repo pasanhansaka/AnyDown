@@ -22,7 +22,31 @@ const analyzeController = {
         try {
             const metadata = await ytDlpService.getMetadata(url);
             
-            // Map common fields across platforms
+            // Handle collections (playlists/channels)
+            if (metadata.is_collection) {
+                const result = {
+                    is_collection: true,
+                    title: metadata.title || oEmbedData?.title || 'Collection',
+                    thumbnail: metadata.thumbnail || oEmbedData?.thumbnail_url || (metadata.entries?.[0]?.thumbnail),
+                    platform: metadata.extractor_key || metadata.platform || (isYouTube ? 'YouTube' : 'Unknown'),
+                    entries: (metadata.entries || []).map(e => ({
+                        id: e.id,
+                        title: e.title,
+                        url: e.url || `https://www.youtube.com/watch?v=${e.id}`, // Fallback for YT
+                        thumbnail: e.thumbnail,
+                        duration: e.duration,
+                        uploader: e.uploader
+                    })),
+                    original_url: url
+                };
+
+                return res.status(200).json({
+                    success: true,
+                    data: result
+                });
+            }
+
+            // Map common fields across platforms for single video
             const result = {
                 title: metadata.title || oEmbedData?.title,
                 thumbnail: metadata.thumbnail || oEmbedData?.thumbnail_url,
