@@ -1,5 +1,6 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const axios = require('axios');
 require('dotenv').config();
 
@@ -21,7 +22,7 @@ const ytDlpService = {
             '--add-header', 'User-Agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36',
             '--add-header', 'Accept-Language: en-US,en;q=0.9',
             '--add-header', 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-            '--extractor-args', 'youtube:player_client=web,default;youtube:player_skip=webpage,configs',
+            '--extractor-args', 'youtube:player_client=android,web,default',
         ];
 
         // Add cookies if available
