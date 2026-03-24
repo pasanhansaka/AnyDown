@@ -24,7 +24,8 @@ const ytDlpService = {
             '--add-header', 'Sec-Fetch-Mode: navigate',
             '--add-header', 'Sec-Fetch-User: ?1',
             '--add-header', 'Sec-Fetch-Dest: document',
-            '--extractor-args', 'youtube:player_client=android,web,default',
+            '--age-limit', '18',
+            '--extractor-args', 'youtube:player_client=android,mweb,web,default',
         ];
 
         // Add cookies if available

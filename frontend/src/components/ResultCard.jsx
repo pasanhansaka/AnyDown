@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Info, ExternalLink, Share2, Play, Pause, Volume2, RotateCcw, Loader2 } from 'lucide-react';
 import FormatSelector from './FormatSelector';
 import AspectRatioSelector from './AspectRatioSelector';
+import RestrictedNotice from './RestrictedNotice';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
 
@@ -173,17 +174,23 @@ const ResultCard = () => {
                         <AspectRatioSelector selected={aspectRatio} onChange={setAspectRatio} />
 
                         <div className="space-y-8">
-                            <FormatSelector 
-                                formats={videoData.formats} 
-                                onDownload={handleDownload} 
-                                type="video" 
-                            />
-                            
-                            <FormatSelector 
-                                formats={videoData.formats} 
-                                onDownload={handleDownload} 
-                                type="audio" 
-                            />
+                            {videoData.restricted || videoData.formats.length === 0 ? (
+                                <RestrictedNotice message={videoData.message} />
+                            ) : (
+                                <>
+                                    <FormatSelector 
+                                        formats={videoData.formats} 
+                                        onDownload={handleDownload} 
+                                        type="video" 
+                                    />
+                                    
+                                    <FormatSelector 
+                                        formats={videoData.formats} 
+                                        onDownload={handleDownload} 
+                                        type="audio" 
+                                    />
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>
