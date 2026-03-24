@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Info, ExternalLink, Share2, Play, Pause, Volume2, RotateCcw } from 'lucide-react';
+import { Clock, Info, ExternalLink, Share2, Play, Pause, Volume2, RotateCcw, Loader2 } from 'lucide-react';
 import FormatSelector from './FormatSelector';
 import AspectRatioSelector from './AspectRatioSelector';
 import { useAppContext } from '../context/AppContext';
@@ -10,6 +10,7 @@ const ResultCard = () => {
     const { videoData, addToHistory } = useAppContext();
     const [aspectRatio, setAspectRatio] = useState('original');
     const [showPreview, setShowPreview] = useState(false);
+    const [isDownloading, setIsDownloading] = useState(false);
     const cardRef = useRef(null);
 
     useEffect(() => {
@@ -46,8 +47,16 @@ const ResultCard = () => {
         });
 
         // Trigger download
+        setIsDownloading(true);
         window.location.href = `${import.meta.env.VITE_API_BASE_URL}/download?${queryParams.toString()}`;
-        toast.info('Starting download... Please wait.');
+        
+        // Since we can't reliably detect when a file download starts via window.location.href,
+        // we use a reasonable timeout to clear the loading state.
+        setTimeout(() => {
+            setIsDownloading(false);
+        }, 8000);
+
+        toast.info('Processing your video... Please wait.');
     };
 
     const handleShare = () => {
@@ -179,6 +188,39 @@ const ResultCard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Downloading Overlay */}
+            <AnimatePresence>
+                {isDownloading && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md rounded-3xl"
+                    >
+                        <div className="text-center space-y-6 p-8 max-w-sm">
+                            <div className="relative w-24 h-24 mx-auto">
+                                <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <Loader2 className="text-primary animate-pulse" size={40} />
+                                </div>
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-bold italic tracking-tight">Processing Video...</h3>
+                                <p className="text-gray-300 text-sm">
+                                    We're preparing your file with the best quality. Your download will start automatically in a few seconds.
+                                </p>
+                            </div>
+                            <button 
+                                onClick={() => setIsDownloading(false)}
+                                className="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full text-xs font-medium transition-all"
+                            >
+                                Dismiss Overlay
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.div>
     );
 };
