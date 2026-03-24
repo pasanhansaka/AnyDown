@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Info, ExternalLink, Share2, Play, Pause, Volume2, RotateCcw } from 'lucide-react';
 import FormatSelector from './FormatSelector';
@@ -10,6 +10,15 @@ const ResultCard = () => {
     const { videoData, addToHistory } = useAppContext();
     const [aspectRatio, setAspectRatio] = useState('original');
     const [showPreview, setShowPreview] = useState(false);
+    const cardRef = useRef(null);
+
+    useEffect(() => {
+        if (cardRef.current) {
+            setTimeout(() => {
+                cardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    }, []);
 
     if (!videoData) return null;
 
@@ -55,6 +64,7 @@ const ResultCard = () => {
 
     return (
         <motion.div
+            ref={cardRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="w-full max-w-5xl mx-auto mt-12 mb-20"

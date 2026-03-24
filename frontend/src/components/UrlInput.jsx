@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Clipboard, Play, Youtube, Facebook, Instagram, Music, Twitter, Linkedin } from 'lucide-react';
+import { Search, Clipboard, Play, Youtube, Facebook, Instagram, Music, Twitter, Linkedin, X } from 'lucide-react';
 import axios from 'axios';
 import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
@@ -31,6 +31,12 @@ const UrlInput = () => {
         } catch (err) {
             toast.error('Failed to read clipboard');
         }
+    };
+
+    const handleClear = () => {
+        setUrl('');
+        setVideoData(null);
+        setError(null);
     };
 
     const handleAnalyze = async (e) => {
@@ -90,6 +96,17 @@ const UrlInput = () => {
                     />
 
                     <div className="flex items-center gap-2 pr-4">
+                        {url && (
+                            <button
+                                type="button"
+                                onClick={handleClear}
+                                className="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors"
+                                title="Clear input"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
+
                         <button
                             type="button"
                             onClick={handlePaste}

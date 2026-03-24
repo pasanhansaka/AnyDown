@@ -1,5 +1,7 @@
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const os = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 require('dotenv').config();
 
@@ -20,87 +22,119 @@ const downloadController = {
         const ytDlpService = require('../services/yt-dlp-service');
         const isAudio = format_id && (format_id.includes('audio') || format_id === '140' || format_id === '251');
         const extension = isAudio ? 'mp3' : 'mp4';
-        const fileName = `${title || 'video'}.${extension}`;
+        const safeTitle = (title || 'video').replace(/[/\\?%*:|"<>]/g, '-');
+        const fileName = `${safeTitle}.${extension}`;
         
-        res.header('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
-        res.header('Content-Type', isAudio ? 'audio/mpeg' : 'video/mp4');
+        // Temporary file paths
+        const tempId = Math.random().toString(36).substring(7);
+        const tempDir = os.tmpdir();
+        const downloadTemplate = path.join(tempDir, `anydown_${tempId}.%(ext)s`);
+        const outputPath = path.join(tempDir, `anydown_final_${tempId}.${extension}`);
+
+        console.log(`Starting download for: ${url} with format: ${format_id}`);
 
         // Arguments for yt-dlp
         const args = [
             '-f', format_id || 'bestvideo+bestaudio/best',
-            '-o', '-', // Output to stdout
+            '-o', downloadTemplate,
+            '--no-part', // Avoid .part files for simpler handling
             ...ytDlpService.getCommonArgs(),
             url
         ];
 
-        console.log(`Starting download for: ${url} with format: ${format_id}`);
+        // Specific handling for quality/merging
+        if (!isAudio) {
+            args.push('--merge-output-format', 'mp4');
+        } else {
+            args.push('--extract-audio', '--audio-format', 'mp3');
+        }
+
         const ytDlpProcess = spawn(YT_DLP_PATH, args);
 
-        ytDlpProcess.on('error', (err) => {
-            console.error('Failed to start yt-dlp for download:', err);
-            if (!res.headersSent) {
-                res.status(500).send('Failed to start download process');
+        let stderr = '';
+        ytDlpProcess.stderr.on('data', (data) => {
+            stderr += data.toString();
+        });
+
+        ytDlpProcess.on('close', (code) => {
+            if (code !== 0) {
+                console.error(`yt-dlp failed with code ${code}: ${stderr}`);
+                if (!res.headersSent) {
+                    res.status(500).send(`Download failed: ${stderr.split('\n')[0]}`);
+                }
+                return;
+            }
+
+            // Find the actual downloaded file
+            const files = fs.readdirSync(tempDir);
+            const downloadedFile = files.find(f => f.startsWith(`anydown_${tempId}`));
+            
+            if (!downloadedFile) {
+                console.error('Downloaded file not found in temp directory');
+                if (!res.headersSent) {
+                    res.status(500).send('Internal server error: downloaded file lost');
+                }
+                return;
+            }
+
+            const downloadPath = path.join(tempDir, downloadedFile);
+
+            try {
+                if (aspect_ratio && aspect_ratio !== 'original' && !isAudio) {
+                    console.log(`Applying aspect ratio: ${aspect_ratio}`);
+                    
+                    let arValue = 16/9;
+                    switch (aspect_ratio) {
+                        case '9:16': arValue = 9/16; break;
+                        case '1:1': arValue = 1/1; break;
+                        case '4:3': arValue = 4/3; break;
+                        case '21:9': arValue = 21/9; break;
+                        default: arValue = 16/9;
+                    }
+
+                    // Robust crop filter: crop='min(iw, ih*AR)':'min(ih, iw/AR)'
+                    const vf = `crop='min(iw, ih*${arValue})':'min(ih, iw/${arValue})'`;
+
+                    ffmpeg(downloadPath)
+                        .videoFilters(vf)
+                        .output(outputPath)
+                        .on('end', () => {
+                            res.download(outputPath, fileName, (err) => {
+                                // Cleanup
+                                [downloadPath, outputPath].forEach(p => {
+                                    if (fs.existsSync(p)) fs.unlinkSync(p);
+                                });
+                            });
+                        })
+                        .on('error', (err) => {
+                            console.error('FFmpeg error:', err.message);
+                            if (!res.headersSent) {
+                                res.status(500).send('Error processing video aspect ratio');
+                            }
+                            if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath);
+                        })
+                        .run();
+                } else {
+                    // Send the file directly
+                    res.download(downloadPath, fileName, (err) => {
+                        // Cleanup
+                        if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath);
+                    });
+                }
+            } catch (error) {
+                console.error('Final processing error:', error);
+                if (!res.headersSent) {
+                    res.status(500).send('Final processing failed');
+                }
+                if (fs.existsSync(downloadPath)) fs.unlinkSync(downloadPath);
             }
         });
 
-        if (aspect_ratio && aspect_ratio !== 'original') {
-            console.log(`Applying aspect ratio: ${aspect_ratio}`);
-            // Use ffmpeg to change aspect ratio
-            let vf = '';
-            switch (aspect_ratio) {
-                case '16:9':
-                    vf = 'crop=ih*16/9:ih';
-                    break;
-                case '9:16':
-                    vf = 'crop=ih*9/16:ih';
-                    break;
-                case '1:1':
-                    vf = 'crop=ih:ih';
-                    break;
-                case '4:3':
-                    vf = 'crop=ih*4/3:ih';
-                    break;
-                default:
-                    vf = '';
-            }
-
-            const ffmpegCommand = ffmpeg(ytDlpProcess.stdout);
-            
-            if (vf) {
-                ffmpegCommand.videoFilters(vf);
-            }
-
-            ffmpegCommand
-                .format('mp4')
-                .on('error', (err) => {
-                    console.error('FFmpeg error:', err.message);
-                    if (!res.headersSent) {
-                        res.status(500).send('Error processing video');
-                    }
-                })
-                .pipe(res, { end: true });
-
-            ytDlpProcess.stderr.on('data', (data) => {
-                console.error(`yt-dlp stderr: ${data}`);
-            });
-        } else {
-            // Just pipe directly
-            ytDlpProcess.stdout.pipe(res);
-            
-            ytDlpProcess.stderr.on('data', (data) => {
-                // Not necessarily an error, but log it
-            });
-
-            ytDlpProcess.on('close', (code) => {
-                if (code !== 0) {
-                    console.error(`yt-dlp download process exited with code ${code}`);
-                }
-            });
-        }
-
         // Cleanup on client close
         req.on('close', () => {
-            ytDlpProcess.kill();
+            if (ytDlpProcess.exitCode === null) {
+                ytDlpProcess.kill();
+            }
         });
     }
 };

@@ -8,6 +8,7 @@ const AspectRatioSelector = ({ selected, onChange }) => {
         { id: '9:16', label: '9:16 TikTok/Reels', icon: <Smartphone size={16} /> },
         { id: '1:1', label: '1:1 Square', icon: <Square size={16} /> },
         { id: '4:3', label: '4:3 Classic', icon: <Layout size={16} /> },
+        { id: '21:9', label: '21:9 Ultrawide', icon: <Monitor size={16} /> },
     ];
 
     return (

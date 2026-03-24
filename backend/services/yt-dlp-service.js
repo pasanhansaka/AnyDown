@@ -29,8 +29,11 @@ const ytDlpService = {
             const cookiesPath = path.isAbsolute(process.env.YT_DLP_COOKIES_PATH) 
                 ? process.env.YT_DLP_COOKIES_PATH 
                 : path.join(__dirname, '..', process.env.YT_DLP_COOKIES_PATH);
-            args.push('--cookies', cookiesPath);
-        } else if (process.env.YT_DLP_USE_BROWSER_COOKIES) {
+            if (fs.existsSync(cookiesPath)) {
+                args.push('--cookies', cookiesPath);
+            }
+        } else if (process.env.YT_DLP_USE_BROWSER_COOKIES && process.env.NODE_ENV !== 'production') {
+            // Only try browser cookies in development, as it requires a local browser installed
             args.push('--cookies-from-browser', process.env.YT_DLP_USE_BROWSER_COOKIES);
         }
 
