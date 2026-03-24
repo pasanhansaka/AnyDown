@@ -21,8 +21,8 @@ const downloadController = {
 
         const ytDlpService = require('../services/yt-dlp-service');
         const isAudioOnly = format_id && 
-            ((format_id.includes('audio') && !format_id.includes('video')) || 
-             ['140', '251', 'bestaudio', 'bestaudio/best'].some(id => format_id.includes(id)));
+            (format_id.includes('audio') || ['140', '251'].includes(format_id)) && 
+            !format_id.includes('video');
              
         const extension = isAudioOnly ? 'mp3' : 'mp4';
         const safeTitle = (title || 'video').replace(/[/\\?%*:|"<>]/g, '-');
