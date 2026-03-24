@@ -5,7 +5,7 @@
 ![Tech Stack](https://img.shields.io/badge/Frontend-React%20%2B%20Vite-61DAFB?style=flat-square&logo=react)
 ![Backend](https://img.shields.io/badge/Backend-Node.js%20%2B%20Express-339933?style=flat-square&logo=node.js)
 ![Engine](https://img.shields.io/badge/Engine-yt--dlp%20%2B%20FFmpeg-FF0000?style=flat-square)
-![License](https://img.shields.io/badge/  License-Personal%20Use-blue?style=flat-square)
+![License](https://img.shields.io/badge/License-Personal%20Use-blue?style=flat-square)
 ...
 ---
 
@@ -57,3 +57,9 @@ AnyDown/
 ## 📄 License
 
 This project is for personal use. Please review the applicable platform terms of service before use.
+
+---
+
+## ⚖️ License
+
+Private. Copyright © 2026 **Thorn Solution**. All Rights Reserved.
