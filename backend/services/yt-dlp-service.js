@@ -73,6 +73,30 @@ const ytDlpService = {
     },
 
     /**
+     * Create a temporary cookies file
+     * @param {string} cookiesContent 
+     * @returns {string|null} Path to the created file, or null
+     */
+    createTempCookiesFile: (cookiesContent) => {
+        if (!cookiesContent || typeof cookiesContent !== 'string' || cookiesContent.trim() === '') {
+            return null;
+        }
+
+        const os = require('os');
+        const tempId = Math.random().toString(36).substring(7);
+        const tempPath = path.join(os.tmpdir(), `anydown_cookies_${tempId}.txt`);
+        
+        try {
+            fs.writeFileSync(tempPath, cookiesContent, 'utf8');
+            console.log(`Temporary cookies file created at ${tempPath}`);
+            return tempPath;
+        } catch (err) {
+            console.error('Failed to create temporary cookies file:', err);
+            return null;
+        }
+    },
+
+    /**
      * Get common yt-dlp arguments
      * @returns {Array}
      */
@@ -112,16 +136,23 @@ const ytDlpService = {
     /**
      * Get video metadata using yt-dlp
      * @param {string} url 
+     * @param {string} [cookiesContent]
      * @returns {Promise<Object>}
      */
-    getMetadata: async (url) => {
+    getMetadata: async (url, cookiesContent) => {
         const ytDlpPath = await ytDlpService.getYtDlpPath();
+        const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
+        
         return new Promise((resolve, reject) => {
             const args = [
                 '--dump-json',
                 ...ytDlpService.getCommonArgs(),
                 url
             ];
+            
+            if (tempCookiesPath) {
+                args.push('--cookies', tempCookiesPath);
+            }
             
             console.log(`Executing yt-dlp with args: ${args.join(' ')}`);
             const child = spawn(ytDlpPath, args);
@@ -139,10 +170,20 @@ const ytDlpService = {
 
             child.on('error', (err) => {
                 console.error('Failed to start yt-dlp:', err);
+                if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                    try { fs.unlinkSync(tempCookiesPath); } catch (e) {}
+                }
                 reject(new Error(`Failed to start yt-dlp: ${err.message}`));
             });
 
             child.on('close', (code) => {
+                if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                    try {
+                        fs.unlinkSync(tempCookiesPath);
+                        console.log(`Cleaned up temporary cookies file ${tempCookiesPath}`);
+                    } catch (e) {}
+                }
+
                 if (code !== 0) {
                     console.error(`yt-dlp process exited with code ${code}`);
                     console.error(`stderr: ${stderr}`);
@@ -281,9 +322,13 @@ const ytDlpService = {
     
     /**
      * Extra metadata for a playlist (flat)
+     * @param {string} url
+     * @param {string} [cookiesContent]
      */
-    getPlaylistMetadata: async (url) => {
+    getPlaylistMetadata: async (url, cookiesContent) => {
         const ytDlpPath = await ytDlpService.getYtDlpPath();
+        const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
+        
         return new Promise((resolve, reject) => {
             const args = [
                 '--dump-json',
@@ -292,6 +337,10 @@ const ytDlpService = {
                 url
             ];
             
+            if (tempCookiesPath) {
+                args.push('--cookies', tempCookiesPath);
+            }
+            
             const child = spawn(ytDlpPath, args);
             let stdout = '';
             let stderr = '';
@@ -299,7 +348,20 @@ const ytDlpService = {
             child.stdout.on('data', (data) => stdout += data.toString());
             child.stderr.on('data', (data) => stderr += data.toString());
 
+            child.on('error', (err) => {
+                if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                    try { fs.unlinkSync(tempCookiesPath); } catch (e) {}
+                }
+                reject(err);
+            });
+
             child.on('close', (code) => {
+                if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                    try {
+                        fs.unlinkSync(tempCookiesPath);
+                    } catch (e) {}
+                }
+
                 if (code !== 0) return reject(new Error(stderr));
                 try {
                     const entries = stdout.trim().split('\n').map(line => {

@@ -1,7 +1,9 @@
 import React from 'react';
 import { ShieldAlert, Key, ExternalLink, Globe } from 'lucide-react';
+import { useAppContext } from '../context/AppContext';
 
 const RestrictedNotice = ({ message }) => {
+    const { setIsCookiesOpen } = useAppContext();
     return (
         <div className="w-full max-w-2xl mx-auto p-8 rounded-3xl bg-slate-900/50 border border-red-500/20 backdrop-blur-xl overflow-hidden relative">
             {/* Background Glow */}
@@ -20,15 +22,18 @@ const RestrictedNotice = ({ message }) => {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                    <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center gap-3">
+                    <button 
+                        onClick={() => setIsCookiesOpen(true)}
+                        className="p-4 rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 hover:border-primary/30 transition-all flex flex-col items-center gap-3 text-center cursor-pointer"
+                    >
                         <Key size={24} className="text-primary" />
-                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500 text-center">
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-500">
                             Cookie Support
                         </div>
-                        <p className="text-[11px] text-gray-400 text-center leading-tight">
-                            Try adding a <code className="text-primary">cookies.txt</code> file to the server root for full bypass.
+                        <p className="text-[11px] text-gray-400 leading-tight">
+                            Click here to configure custom YouTube cookies to bypass restrictions.
                         </p>
-                    </div>
+                    </button>
                     
                     <div className="p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col items-center gap-3">
                         <Globe size={24} className="text-primary" />

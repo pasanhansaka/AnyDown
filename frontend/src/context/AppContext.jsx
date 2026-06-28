@@ -10,8 +10,10 @@ export const AppProvider = ({ children }) => {
     const [error, setError] = useState(null);
     const [history, setHistory] = useState([]);
     const [darkMode, setDarkMode] = useState(true);
+    const [ytCookies, setYtCookies] = useState('');
+    const [isCookiesOpen, setIsCookiesOpen] = useState(false);
 
-    // Load history from localStorage on mount
+    // Load history and cookies from localStorage on mount
     useEffect(() => {
         const savedHistory = localStorage.getItem('anydown_history');
         if (savedHistory) {
@@ -22,7 +24,17 @@ export const AppProvider = ({ children }) => {
         if (savedMode !== null) {
             setDarkMode(JSON.parse(savedMode));
         }
+
+        const savedCookies = localStorage.getItem('anydown_yt_cookies');
+        if (savedCookies) {
+            setYtCookies(savedCookies);
+        }
     }, []);
+
+    // Save cookies to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('anydown_yt_cookies', ytCookies);
+    }, [ytCookies]);
 
     // Save history to localStorage whenever it changes
     useEffect(() => {
@@ -67,7 +79,7 @@ export const AppProvider = ({ children }) => {
 
         try {
             console.log(`Analyzing URL: ${url}`);
-            const response = await axios.post(`${apiBaseUrl}/analyze`, { url });
+            const response = await axios.post(`${apiBaseUrl}/analyze`, { url, cookies: ytCookies });
             if (response.data.success) {
                 setVideoData(response.data.data);
                 toast.success('Analysed successfully!');
@@ -94,6 +106,8 @@ export const AppProvider = ({ children }) => {
             error, setError,
             history, addToHistory, clearHistory,
             darkMode, setDarkMode,
+            ytCookies, setYtCookies,
+            isCookiesOpen, setIsCookiesOpen,
             analyzeUrl
         }}>
             {children}

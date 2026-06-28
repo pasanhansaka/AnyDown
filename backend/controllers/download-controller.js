@@ -20,7 +20,7 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 const downloadController = {
     download: async (req, res) => {
-        const { url, format_id, aspect_ratio, title } = req.query;
+        const { url, format_id, aspect_ratio, title, cookies } = req.query;
 
         if (!url) {
             return res.status(400).send('URL is required');
@@ -28,6 +28,16 @@ const downloadController = {
 
         const ytDlpService = require('../services/yt-dlp-service');
         const ytDlpPath = await ytDlpService.getYtDlpPath();
+        
+        let cookiesContent = '';
+        if (cookies) {
+            try {
+                cookiesContent = Buffer.from(cookies, 'base64').toString('utf8');
+            } catch (err) {
+                console.error('Failed to decode base64 cookies:', err);
+            }
+        }
+        const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
         const isAudioOnly = format_id && 
             (format_id.includes('audio') || ['140', '251', 'bestaudio'].some(v => format_id.includes(v))) && 
             !format_id.includes('video');
@@ -62,6 +72,10 @@ const downloadController = {
             url
         ];
 
+        if (tempCookiesPath) {
+            args.push('--cookies', tempCookiesPath);
+        }
+
         // Specific handling for quality/merging
         if (!isAudioOnly) {
             args.push('--merge-output-format', 'mp4');
@@ -79,6 +93,13 @@ const downloadController = {
         });
 
         ytDlpProcess.on('close', (code) => {
+            if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                try {
+                    fs.unlinkSync(tempCookiesPath);
+                    console.log(`Cleaned up download cookies file ${tempCookiesPath}`);
+                } catch (e) {}
+            }
+
             if (code !== 0) {
                 console.error(`yt-dlp failed with code ${code}: ${stderr}`);
                 if (!res.headersSent) {
@@ -172,6 +193,11 @@ const downloadController = {
         req.on('close', () => {
             if (ytDlpProcess.exitCode === null) {
                 ytDlpProcess.kill();
+            }
+            if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                try {
+                    fs.unlinkSync(tempCookiesPath);
+                } catch (e) {}
             }
         });
     }

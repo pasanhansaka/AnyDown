@@ -2,7 +2,7 @@ const ytDlpService = require('../services/yt-dlp-service');
 
 const analyzeController = {
     analyze: async (req, res) => {
-        const { url } = req.body;
+        const { url, cookies } = req.body;
 
         if (!url) {
             return res.status(400).json({
@@ -20,7 +20,7 @@ const analyzeController = {
         }
 
         try {
-            const metadata = await ytDlpService.getMetadata(url);
+            const metadata = await ytDlpService.getMetadata(url, cookies);
             
             // Handle collections (playlists/channels)
             if (metadata.is_collection) {

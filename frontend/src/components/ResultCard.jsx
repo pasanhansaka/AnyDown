@@ -8,7 +8,7 @@ import { useAppContext } from '../context/AppContext';
 import { toast } from 'react-toastify';
 
 const ResultCard = () => {
-    const { videoData, addToHistory } = useAppContext();
+    const { videoData, addToHistory, ytCookies } = useAppContext();
     const [aspectRatio, setAspectRatio] = useState('original');
     const [showPreview, setShowPreview] = useState(false);
     const [isDownloading, setIsDownloading] = useState(false);
@@ -37,6 +37,11 @@ const ResultCard = () => {
             aspect_ratio: aspectRatio,
             title: videoData.title
         });
+
+        if (ytCookies) {
+            const base64Cookies = btoa(unescape(encodeURIComponent(ytCookies)));
+            queryParams.append('cookies', base64Cookies);
+        }
 
         // Add to local history
         addToHistory({
