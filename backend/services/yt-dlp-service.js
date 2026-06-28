@@ -103,7 +103,6 @@ const ytDlpService = {
     getCommonArgs: () => {
         const args = [
             '--no-warnings',
-            '--force-ipv4',
             '--no-check-certificate',
             '--geo-bypass',
             '--referer', 'https://www.youtube.com/',
