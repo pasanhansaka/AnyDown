@@ -93,11 +93,13 @@ const downloadController = {
 
         // Intelligent format selection: If it's a specific video format, safely attempt to merge audio.
         let finalFormatId = format_id || 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best';
-        if (!isAudioOnly && format_id && format_id !== 'bestvideo+bestaudio/best' && !format_id.includes('+')) {
+        const isYouTube = url.includes('youtube.com') || url.includes('youtu.be');
+        
+        if (!isAudioOnly && format_id && format_id !== 'bestvideo+bestaudio/best' && !format_id.includes('+') && isYouTube) {
             // Prioritize merging with an explicitly mp4-compatible audio stream (m4a/aac) 
             // to avoid corrupted MP4 file metadata (which causes 0 duration or unplayable files).
             finalFormatId = `${format_id}+bestaudio[ext=m4a]/${format_id}+bestaudio/${format_id}`;
-            console.log(`Adjusted format string to ensure audio: ${finalFormatId}`);
+            console.log(`Adjusted format string to ensure audio (YouTube): ${finalFormatId}`);
         }
 
         // Arguments for yt-dlp
@@ -122,7 +124,14 @@ const downloadController = {
             args.push('--extract-audio', '--audio-format', 'mp3');
         }
 
-        const ytDlpProcess = spawn(ytDlpPath, args);
+        // Prepend the ffmpeg binary directory to PATH so yt-dlp can locate it for merging
+        const ffmpegDir = path.dirname(ffmpegPath);
+        const childEnv = {
+            ...process.env,
+            PATH: `${ffmpegDir}${path.delimiter}${process.env.PATH || ''}`
+        };
+
+        const ytDlpProcess = spawn(ytDlpPath, args, { env: childEnv });
 
         let stderr = '';
         ytDlpProcess.stderr.on('data', (data) => {
