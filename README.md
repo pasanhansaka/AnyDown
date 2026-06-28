@@ -38,8 +38,17 @@
 This project is designed to be deployed in two parts:
 
 ### Frontend - GitHub Pages
+The frontend is deployed to GitHub Pages using the built-in deployment script:
+1. Update `frontend/.env` to point `VITE_API_BASE_URL` to your Vercel backend deployment URL.
+2. Run `npm run deploy` to build and publish the frontend.
 
-### Backend - Railway
+### Backend - Vercel
+The backend is configured to be deployed on Vercel:
+1. Create a new project on Vercel and import your repository.
+2. Set the **Root Directory** to `backend` in the project settings.
+3. Deploy! Vercel will automatically compile the Express serverless functions using `backend/vercel.json`.
+4. Once deployed, copy your backend Vercel URL and update `VITE_API_BASE_URL` in the frontend config to `https://your-vercel-backend.vercel.app/api`.
+
 
 ---
 

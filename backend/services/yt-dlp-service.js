@@ -1,12 +1,77 @@
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const axios = require('axios');
 require('dotenv').config();
 
-const YT_DLP_PATH = process.env.YT_DLP_PATH || 'yt-dlp';
+let resolvedYtDlpPath = null;
 
 const ytDlpService = {
+    /**
+     * Dynamically resolves or downloads yt-dlp binary
+     * @returns {Promise<string>}
+     */
+    getYtDlpPath: async () => {
+        if (resolvedYtDlpPath) return resolvedYtDlpPath;
+
+        // If environment variable is set and exists, use it
+        if (process.env.YT_DLP_PATH && fs.existsSync(process.env.YT_DLP_PATH)) {
+            resolvedYtDlpPath = process.env.YT_DLP_PATH;
+            return resolvedYtDlpPath;
+        }
+
+        // Try to run system-wide yt-dlp
+        try {
+            execSync('yt-dlp --version', { stdio: 'ignore' });
+            resolvedYtDlpPath = 'yt-dlp';
+            return resolvedYtDlpPath;
+        } catch (e) {
+            // Not in system path
+        }
+
+        // Determine temporary path for serverless/local download
+        const tempDir = process.env.VERCEL ? '/tmp' : path.join(__dirname, '..', 'bin');
+        if (!fs.existsSync(tempDir)) {
+            fs.mkdirSync(tempDir, { recursive: true });
+        }
+
+        const binaryName = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp';
+        const targetPath = path.join(tempDir, binaryName);
+
+        if (fs.existsSync(targetPath)) {
+            resolvedYtDlpPath = targetPath;
+            return resolvedYtDlpPath;
+        }
+
+        console.log(`yt-dlp not found. Downloading to ${targetPath}...`);
+        const url = process.platform === 'win32' 
+            ? 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe'
+            : 'https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp';
+
+        const response = await axios({
+            method: 'get',
+            url: url,
+            responseType: 'stream'
+        });
+
+        const writer = fs.createWriteStream(targetPath);
+        response.data.pipe(writer);
+
+        await new Promise((resolve, reject) => {
+            writer.on('finish', resolve);
+            writer.on('error', reject);
+        });
+
+        // Make it executable
+        if (process.platform !== 'win32') {
+            fs.chmodSync(targetPath, '755');
+        }
+
+        console.log(`yt-dlp downloaded successfully to ${targetPath}`);
+        resolvedYtDlpPath = targetPath;
+        return resolvedYtDlpPath;
+    },
+
     /**
      * Get common yt-dlp arguments
      * @returns {Array}
@@ -49,7 +114,8 @@ const ytDlpService = {
      * @param {string} url 
      * @returns {Promise<Object>}
      */
-    getMetadata: (url) => {
+    getMetadata: async (url) => {
+        const ytDlpPath = await ytDlpService.getYtDlpPath();
         return new Promise((resolve, reject) => {
             const args = [
                 '--dump-json',
@@ -58,7 +124,7 @@ const ytDlpService = {
             ];
             
             console.log(`Executing yt-dlp with args: ${args.join(' ')}`);
-            const child = spawn(YT_DLP_PATH, args);
+            const child = spawn(ytDlpPath, args);
 
             let stdout = '';
             let stderr = '';
@@ -216,7 +282,8 @@ const ytDlpService = {
     /**
      * Extra metadata for a playlist (flat)
      */
-    getPlaylistMetadata: (url) => {
+    getPlaylistMetadata: async (url) => {
+        const ytDlpPath = await ytDlpService.getYtDlpPath();
         return new Promise((resolve, reject) => {
             const args = [
                 '--dump-json',
@@ -225,7 +292,7 @@ const ytDlpService = {
                 url
             ];
             
-            const child = spawn(YT_DLP_PATH, args);
+            const child = spawn(ytDlpPath, args);
             let stdout = '';
             let stderr = '';
 

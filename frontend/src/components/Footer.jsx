@@ -66,7 +66,7 @@ const Footer = () => {
                         Made with <Heart size={14} className="text-red-500 fill-current" /> for the community.
                     </p>
                     <p className="mt-2 text-slate-400">
-                        © {new Date().getFullYear()} <span className="text-primary font-bold">Thorn Solution</span>. All rights reserved.
+                        © 2026 <span className="text-primary font-bold">Thorn Solution</span>. All rights reserved.
                     </p>
                     <p className="mt-4 text-[10px] uppercase tracking-widest opacity-50">
                         This tool is intended for personal use and for content you have permission to download.

@@ -5,14 +5,21 @@ const os = require('os');
 const ffmpeg = require('fluent-ffmpeg');
 require('dotenv').config();
 
-// Set the ffmpeg path from environment or default to system ffmpeg
-const FFMPEG_PATH = process.env.FFMPEG_PATH || 'ffmpeg';
-ffmpeg.setFfmpegPath(FFMPEG_PATH);
-
-const YT_DLP_PATH = process.env.YT_DLP_PATH || 'yt-dlp';
+// Set the ffmpeg path using @ffmpeg-installer/ffmpeg if available, otherwise fallback to system ffmpeg
+let ffmpegPath = process.env.FFMPEG_PATH || 'ffmpeg';
+try {
+    const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+    if (ffmpegInstaller.path) {
+        ffmpegPath = ffmpegInstaller.path;
+        console.log(`Using @ffmpeg-installer/ffmpeg binary at: ${ffmpegPath}`);
+    }
+} catch (err) {
+    console.log('Using system ffmpeg (failed to load @ffmpeg-installer/ffmpeg)');
+}
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 const downloadController = {
-    download: (req, res) => {
+    download: async (req, res) => {
         const { url, format_id, aspect_ratio, title } = req.query;
 
         if (!url) {
@@ -20,8 +27,9 @@ const downloadController = {
         }
 
         const ytDlpService = require('../services/yt-dlp-service');
+        const ytDlpPath = await ytDlpService.getYtDlpPath();
         const isAudioOnly = format_id && 
-            (format_id.includes('audio') || ['140', '251'].includes(format_id)) && 
+            (format_id.includes('audio') || ['140', '251', 'bestaudio'].some(v => format_id.includes(v))) && 
             !format_id.includes('video');
              
         const extension = isAudioOnly ? 'mp3' : 'mp4';
@@ -36,9 +44,18 @@ const downloadController = {
 
         console.log(`Starting download for: ${url} with format: ${format_id}`);
 
+        // Intelligent format selection: If it's a specific video format, safely attempt to merge audio.
+        let finalFormatId = format_id || 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best';
+        if (!isAudioOnly && format_id && format_id !== 'bestvideo+bestaudio/best' && !format_id.includes('+')) {
+            // Prioritize merging with an explicitly mp4-compatible audio stream (m4a/aac) 
+            // to avoid corrupted MP4 file metadata (which causes 0 duration or unplayable files).
+            finalFormatId = `${format_id}+bestaudio[ext=m4a]/${format_id}+bestaudio/${format_id}`;
+            console.log(`Adjusted format string to ensure audio: ${finalFormatId}`);
+        }
+
         // Arguments for yt-dlp
         const args = [
-            '-f', format_id || 'bestvideo+bestaudio/best',
+            '-f', finalFormatId,
             '-o', downloadTemplate,
             '--no-part', // Avoid .part files for simpler handling
             ...ytDlpService.getCommonArgs(),
@@ -48,11 +65,13 @@ const downloadController = {
         // Specific handling for quality/merging
         if (!isAudioOnly) {
             args.push('--merge-output-format', 'mp4');
+            // Ensure the MOOV atom is placed at the front to fix zero-duration issues on certain players
+            args.push('--postprocessor-args', 'ffmpeg:-movflags +faststart');
         } else {
             args.push('--extract-audio', '--audio-format', 'mp3');
         }
 
-        const ytDlpProcess = spawn(YT_DLP_PATH, args);
+        const ytDlpProcess = spawn(ytDlpPath, args);
 
         let stderr = '';
         ytDlpProcess.stderr.on('data', (data) => {
@@ -68,7 +87,7 @@ const downloadController = {
                 return;
             }
 
-            // Find the actual downloaded file
+            // Find the actual downloaded file (extension might vary based on yt-dlp merge output)
             const files = fs.readdirSync(tempDir);
             const downloadedFile = files.find(f => f.startsWith(`anydown_${tempId}`));
             
@@ -81,6 +100,8 @@ const downloadController = {
             }
 
             const downloadPath = path.join(tempDir, downloadedFile);
+            const actualExtension = downloadedFile.split('.').pop() || extension;
+            const actualFileName = `${safeTitle}.${actualExtension}`;
 
             try {
                 if (aspect_ratio && aspect_ratio !== 'original' && !isAudioOnly) {
@@ -97,12 +118,23 @@ const downloadController = {
 
                     // Robust crop filter: crop='min(iw, ih*AR)':'min(ih, iw/AR)'
                     const vf = `crop='min(iw, ih*${arValue})':'min(ih, iw/${arValue})'`;
+                    
+                    // Final output filename should be .mp4 since we are transcoding it
+                    const transcodedFileName = `${safeTitle}.mp4`;
 
                     ffmpeg(downloadPath)
                         .videoFilters(vf)
+                        .videoCodec('libx264')
+                        .outputOptions([
+                            '-preset fast',           // Faster processing speed to avoid timeouts
+                            '-crf 23',                // Sensible default for quality vs size
+                            '-c:a aac',               // Transcode audio to AAC to ensure compatibility
+                            '-b:a 128k',              // Audio bitrate
+                            '-movflags +faststart'    // Optimize for web playback
+                        ])
                         .output(outputPath)
                         .on('end', () => {
-                            res.download(outputPath, fileName, (err) => {
+                            res.download(outputPath, transcodedFileName, (err) => {
                                 // Cleanup
                                 [downloadPath, outputPath].forEach(p => {
                                     if (fs.existsSync(p)) fs.unlinkSync(p);
@@ -120,10 +152,9 @@ const downloadController = {
                 } else {
                     // Send the file directly
                     console.log(`Sending file: ${downloadPath}`);
-                    res.download(downloadPath, fileName, (err) => {
+                    res.download(downloadPath, actualFileName, (err) => {
                         // Cleanup
                         if (fs.existsSync(downloadPath)) {
-                            // Only unlink if it's the temp file, not the original (though they are all temp here)
                             fs.unlinkSync(downloadPath);
                         }
                     });
