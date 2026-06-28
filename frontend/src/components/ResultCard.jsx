@@ -31,16 +31,26 @@ const ResultCard = () => {
     const audioPreview = videoData.formats.find(f => f.is_audio);
 
     const handleDownload = (format) => {
-        const queryParams = new URLSearchParams({
-            url: videoData.original_url,
-            format_id: format.format_id,
-            aspect_ratio: aspectRatio,
-            title: videoData.title
-        });
+        let queryParams;
+        if (format.format_id && format.format_id.startsWith('invidious_')) {
+            queryParams = new URLSearchParams({
+                url: format.url,
+                format_id: format.format_id,
+                title: videoData.title,
+                is_direct: 'true'
+            });
+        } else {
+            queryParams = new URLSearchParams({
+                url: videoData.original_url,
+                format_id: format.format_id,
+                aspect_ratio: aspectRatio,
+                title: videoData.title
+            });
 
-        if (ytCookies) {
-            const base64Cookies = btoa(unescape(encodeURIComponent(ytCookies)));
-            queryParams.append('cookies', base64Cookies);
+            if (ytCookies) {
+                const base64Cookies = btoa(unescape(encodeURIComponent(ytCookies)));
+                queryParams.append('cookies', base64Cookies);
+            }
         }
 
         // Add to local history

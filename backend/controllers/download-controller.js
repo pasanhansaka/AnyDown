@@ -20,10 +20,46 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 const downloadController = {
     download: async (req, res) => {
-        const { url, format_id, aspect_ratio, title, cookies } = req.query;
+        const { url, format_id, aspect_ratio, title, cookies, is_direct } = req.query;
 
         if (!url) {
             return res.status(400).send('URL is required');
+        }
+
+        // Direct download piping (e.g. Invidious format bypasses)
+        if (is_direct === 'true') {
+            console.log(`Direct stream downloading and piping for: ${url}`);
+            const axios = require('axios');
+            try {
+                const safeTitle = (title || 'video').replace(/[/\\?%*:|"<>]/g, '-');
+                const extension = format_id && format_id.includes('audio') ? 'mp3' : 'mp4';
+                
+                const response = await axios({
+                    method: 'get',
+                    url: url,
+                    responseType: 'stream',
+                    timeout: 30000
+                });
+                
+                const contentType = response.headers['content-type'] || 'video/mp4';
+                res.setHeader('Content-Type', contentType);
+                res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.${extension}"`);
+                
+                response.data.pipe(res);
+                
+                req.on('close', () => {
+                    if (response.data && typeof response.data.destroy === 'function') {
+                        response.data.destroy();
+                    }
+                });
+                return;
+            } catch (error) {
+                console.error('Direct download stream error:', error.message);
+                if (!res.headersSent) {
+                    return res.status(500).send(`Direct download stream failed: ${error.message}`);
+                }
+                return;
+            }
         }
 
         const ytDlpService = require('../services/yt-dlp-service');

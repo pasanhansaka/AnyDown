@@ -114,7 +114,7 @@ const ytDlpService = {
             '--add-header', 'Sec-Fetch-User: ?1',
             '--add-header', 'Sec-Fetch-Dest: document',
             '--age-limit', '18',
-            '--extractor-args', 'youtube:player_client=android,mweb,web,default',
+            '--extractor-args', 'youtube:player_client=ios,android,tv',
         ];
 
         // Add cookies if available
@@ -143,86 +143,174 @@ const ytDlpService = {
         const ytDlpPath = await ytDlpService.getYtDlpPath();
         const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
         
-        return new Promise((resolve, reject) => {
-            const args = [
-                '--dump-json',
-                ...ytDlpService.getCommonArgs(),
-                url
-            ];
-            
-            if (tempCookiesPath) {
-                args.push('--cookies', tempCookiesPath);
-            }
-            
-            console.log(`Executing yt-dlp with args: ${args.join(' ')}`);
-            const child = spawn(ytDlpPath, args);
-
-            let stdout = '';
-            let stderr = '';
-
-            child.stdout.on('data', (data) => {
-                stdout += data.toString();
-            });
-
-            child.stderr.on('data', (data) => {
-                stderr += data.toString();
-            });
-
-            child.on('error', (err) => {
-                console.error('Failed to start yt-dlp:', err);
-                if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
-                    try { fs.unlinkSync(tempCookiesPath); } catch (e) {}
+        const runYtDlp = () => {
+            return new Promise((resolve, reject) => {
+                const args = [
+                    '--dump-json',
+                    ...ytDlpService.getCommonArgs(),
+                    url
+                ];
+                
+                if (tempCookiesPath) {
+                    args.push('--cookies', tempCookiesPath);
                 }
-                reject(new Error(`Failed to start yt-dlp: ${err.message}`));
-            });
+                
+                console.log(`Executing yt-dlp with args: ${args.join(' ')}`);
+                const child = spawn(ytDlpPath, args);
 
-            child.on('close', (code) => {
-                if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
-                    try {
-                        fs.unlinkSync(tempCookiesPath);
-                        console.log(`Cleaned up temporary cookies file ${tempCookiesPath}`);
-                    } catch (e) {}
-                }
+                let stdout = '';
+                let stderr = '';
 
-                if (code !== 0) {
-                    console.error(`yt-dlp process exited with code ${code}`);
-                    console.error(`stderr: ${stderr}`);
-                    return reject(new Error(`Failed to extract video metadata: ${stderr || 'Check the URL.'}`));
-                }
+                child.stdout.on('data', (data) => {
+                    stdout += data.toString();
+                });
 
-                try {
-                    // stdout can contain multiple JSON objects if it's a playlist and we didn't use --flat-playlist
-                    // But with --dump-json on a playlist, it typically outputs the whole playlist JSON if not using --flat-playlist
-                    // Actually, let's try to parse as a single object first.
-                    const json = JSON.parse(stdout);
-                    
-                    // If it's a playlist, it will have an '_type' field or 'entries'
-                    if (json._type === 'playlist' || json.entries) {
-                        json.is_collection = true;
+                child.stderr.on('data', (data) => {
+                    stderr += data.toString();
+                });
+
+                child.on('error', (err) => {
+                    console.error('Failed to start yt-dlp:', err);
+                    if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                        try { fs.unlinkSync(tempCookiesPath); } catch (e) {}
+                    }
+                    reject(new Error(`Failed to start yt-dlp: ${err.message}`));
+                });
+
+                child.on('close', (code) => {
+                    if (tempCookiesPath && fs.existsSync(tempCookiesPath)) {
+                        try {
+                            fs.unlinkSync(tempCookiesPath);
+                            console.log(`Cleaned up temporary cookies file ${tempCookiesPath}`);
+                        } catch (e) {}
                     }
 
-                    resolve(json);
-                } catch (e) {
-                    // Try parsing line by line if it's a stream of JSONs
+                    if (code !== 0) {
+                        console.error(`yt-dlp process exited with code ${code}`);
+                        console.error(`stderr: ${stderr}`);
+                        return reject(new Error(`Failed to extract video metadata: ${stderr || 'Check the URL.'}`));
+                    }
+
                     try {
-                        const lines = stdout.trim().split('\n');
-                        if (lines.length > 1) {
-                            const entries = lines.map(line => JSON.parse(line));
-                            resolve({
-                                is_collection: true,
-                                entries: entries,
-                                title: entries[0]?.playlist_title || 'Collection',
-                                extractor_key: entries[0]?.extractor_key
-                            });
-                        } else {
+                        const json = JSON.parse(stdout);
+                        if (json._type === 'playlist' || json.entries) {
+                            json.is_collection = true;
+                        }
+                        resolve(json);
+                    } catch (e) {
+                        try {
+                            const lines = stdout.trim().split('\n');
+                            if (lines.length > 1) {
+                                const entries = lines.map(line => JSON.parse(line));
+                                resolve({
+                                    is_collection: true,
+                                    entries: entries,
+                                    title: entries[0]?.playlist_title || 'Collection',
+                                    extractor_key: entries[0]?.extractor_key
+                                });
+                            } else {
+                                reject(new Error('Failed to parse video metadata.'));
+                            }
+                        } catch (err) {
                             reject(new Error('Failed to parse video metadata.'));
                         }
-                    } catch (err) {
-                        reject(new Error('Failed to parse video metadata.'));
                     }
-                }
+                });
             });
-        });
+        };
+
+        try {
+            return await runYtDlp();
+        } catch (ytDlpError) {
+            console.warn('yt-dlp failed, attempting Invidious fallback...', ytDlpError.message);
+            
+            // Extract video ID if it's YouTube
+            const videoIdMatch = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            if (videoIdMatch) {
+                const videoId = videoIdMatch[1];
+                try {
+                    const invidiousMetadata = await ytDlpService.fetchFromInvidious(videoId);
+                    if (invidiousMetadata) {
+                        console.log('Successfully fetched metadata from Invidious fallback!');
+                        return invidiousMetadata;
+                    }
+                } catch (invidiousError) {
+                    console.error('Invidious fallback failed:', invidiousError.message);
+                }
+            }
+            throw ytDlpError;
+        }
+    },
+
+    /**
+     * Fetch metadata and stream URLs from Invidious public instances as a fallback
+     * @param {string} videoId 
+     * @returns {Promise<Object|null>}
+     */
+    fetchFromInvidious: async (videoId) => {
+        const instances = [
+            'https://invidious.projectsegfau.lt',
+            'https://yewtu.be',
+            'https://invidious.flokinet.to',
+            'https://invidious.nerdvpn.de'
+        ];
+
+        for (const instance of instances) {
+            try {
+                console.log(`Trying Invidious instance: ${instance} for video ID: ${videoId}`);
+                const response = await axios.get(`${instance}/api/v1/videos/${videoId}`, { timeout: 8000 });
+                if (response.data && response.data.title) {
+                    const data = response.data;
+                    const formats = [];
+                    
+                    if (data.formatStreams) {
+                        data.formatStreams.forEach(f => {
+                            formats.push({
+                                format_id: `invidious_combined_${f.qualityLabel}`,
+                                extension: 'mp4',
+                                resolution: f.qualityLabel || '360p',
+                                filesize: 0,
+                                quality: f.qualityLabel,
+                                url: f.url,
+                                is_video: true,
+                                is_audio: true
+                            });
+                        });
+                    }
+                    
+                    if (data.adaptiveFormats) {
+                        data.adaptiveFormats.forEach(f => {
+                            const isVideo = f.type.startsWith('video/');
+                            const isAudio = f.type.startsWith('audio/');
+                            const ext = f.type.split(';')[0].split('/')[1] || 'mp4';
+                            
+                            formats.push({
+                                format_id: `invidious_adaptive_${isVideo ? 'video' : 'audio'}_${f.qualityLabel || f.bitrate}`,
+                                extension: ext,
+                                resolution: isVideo ? (f.qualityLabel || 'Unknown') : 'Audio',
+                                filesize: parseInt(f.contentLength) || 0,
+                                quality: isVideo ? f.qualityLabel : `${Math.round(parseInt(f.bitrate)/1000)}kbps`,
+                                url: f.url,
+                                is_video: isVideo,
+                                is_audio: isAudio
+                            });
+                        });
+                    }
+
+                    return {
+                        title: data.title,
+                        thumbnail: data.videoThumbnails?.find(t => t.quality === 'maxres')?.url || data.videoThumbnails?.[0]?.url,
+                        duration: data.lengthSeconds,
+                        platform: 'YouTube (Bypassed)',
+                        formats: formats,
+                        original_url: `https://www.youtube.com/watch?v=${videoId}`
+                    };
+                }
+            } catch (err) {
+                console.warn(`Invidious instance ${instance} failed:`, err.message);
+            }
+        }
+        return null;
     },
 
     /**
