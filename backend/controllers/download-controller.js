@@ -73,7 +73,8 @@ const downloadController = {
                 console.error('Failed to decode base64 cookies:', err);
             }
         }
-        const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
+        const resolvedCookies = cookiesContent || process.env.YT_DLP_COOKIES_CONTENT || '';
+        const tempCookiesPath = ytDlpService.createTempCookiesFile(resolvedCookies);
         const isAudioOnly = format_id && 
             (format_id.includes('audio') || ['140', '251', 'bestaudio'].some(v => format_id.includes(v))) && 
             !format_id.includes('video');

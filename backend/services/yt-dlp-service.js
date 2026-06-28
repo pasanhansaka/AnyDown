@@ -141,7 +141,8 @@ const ytDlpService = {
      */
     getMetadata: async (url, cookiesContent) => {
         const ytDlpPath = await ytDlpService.getYtDlpPath();
-        const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
+        const resolvedCookies = cookiesContent || process.env.YT_DLP_COOKIES_CONTENT || '';
+        const tempCookiesPath = ytDlpService.createTempCookiesFile(resolvedCookies);
         
         const runYtDlp = () => {
             return new Promise((resolve, reject) => {
@@ -415,7 +416,8 @@ const ytDlpService = {
      */
     getPlaylistMetadata: async (url, cookiesContent) => {
         const ytDlpPath = await ytDlpService.getYtDlpPath();
-        const tempCookiesPath = ytDlpService.createTempCookiesFile(cookiesContent);
+        const resolvedCookies = cookiesContent || process.env.YT_DLP_COOKIES_CONTENT || '';
+        const tempCookiesPath = ytDlpService.createTempCookiesFile(resolvedCookies);
         
         return new Promise((resolve, reject) => {
             const args = [
